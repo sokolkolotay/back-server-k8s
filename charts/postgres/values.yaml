@@ -1,0 +1,14 @@
+image:
+  repository: postgres
+  tag: "15-alpine"
+
+database:
+  name: notes
+  user: postgres
+  password: password
+
+storage:
+  size: 2Gi
+
+service:
+  port: 5432

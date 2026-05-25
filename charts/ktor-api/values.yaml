@@ -1,0 +1,17 @@
+image:
+  repository: sokolkolotay/backserver
+  tag: "latest"
+
+service:
+  port: 8080
+
+database:
+  url: jdbc:postgresql://postgres:5432/notes
+  user: postgres
+  password: password
+
+kafka:
+  bootstrapServers: kafka:9092
+  topic: tasks-created
+
+replicas: 1

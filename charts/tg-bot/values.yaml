@@ -1,0 +1,13 @@
+image:
+  repository: sokolkolotay/tg-bot
+  tag: "latest"
+
+telegram:
+  # токен хранится в Kubernetes Secret, не здесь
+  placeholder: "see kubectl secret tg-bot-secret"
+
+kafka:
+  bootstrapServers: kafka:9092
+  topic: tasks-created
+
+replicas: 1

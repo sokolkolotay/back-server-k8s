@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ktor-api-config
+data:
+  DATABASE_URL: "{{ .Values.database.url }}"
+  DATABASE_USER: "{{ .Values.database.user }}"
+  KAFKA_BOOTSTRAP_SERVERS: "{{ .Values.kafka.bootstrapServers }}"
+  KAFKA_TOPIC: "{{ .Values.kafka.topic }}"
