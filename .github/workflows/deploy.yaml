@@ -1,0 +1,49 @@
+name: Deploy Helm Charts
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy charts to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          source: "charts/"
+          target: "~/back-server-k8s/"
+
+      - name: Deploy all charts to k3s
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            export KUBECONFIG=~/.kube/config
+            
+            # PostgreSQL
+            helm upgrade --install postgres ~/back-server-k8s/charts/postgres
+            
+            # Kafka
+            helm upgrade --install kafka ~/back-server-k8s/charts/kafka
+            
+            # Ktor API
+            helm upgrade --install ktor-api ~/back-server-k8s/charts/ktor-api
+            
+            # Telegram Bot
+            helm upgrade --install tg-bot ~/back-server-k8s/charts/tg-bot
+            
+            # Проверка
+            kubectl get pods
