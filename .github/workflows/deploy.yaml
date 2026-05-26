@@ -12,40 +12,32 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       - name: Copy charts to VPS
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          source: "charts"
-          target: "~/back-server-k8s"
+        run: |
+          scp -r ./charts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/back-server-k8s/
 
-      - name: Deploy to k3s via Helm
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          script: |
+      - name: Deploy to k3s
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
             export KUBECONFIG=$HOME/.kube/config
 
-            echo "Deploy PostgreSQL..."
             helm upgrade --install postgres ~/back-server-k8s/charts/postgres
-
-            echo "Deploy Kafka..."
             helm upgrade --install kafka ~/back-server-k8s/charts/kafka
-
-            echo "Deploy Ktor API..."
             helm upgrade --install ktor-api ~/back-server-k8s/charts/ktor-api
-
-            echo "Deploy Telegram Bot..."
             helm upgrade --install tg-bot ~/back-server-k8s/charts/tg-bot
 
-            echo "Pods status:"
+            kubectl rollout status deployment/postgres
+            kubectl rollout status deployment/kafka
+            kubectl rollout status deployment/ktor-api
+            kubectl rollout status deployment/tg-bot
+
             kubectl get pods -o wide
+          EOF
