@@ -10,34 +10,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
-
       - name: Copy charts to VPS
-        run: |
-          scp -r ./charts ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/back-server-k8s/
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          source: "charts/"
+          target: "~/back-server-k8s/"
 
-      - name: Deploy to k3s
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            export KUBECONFIG=$HOME/.kube/config
-
+      - name: Deploy all charts to k3s
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            export KUBECONFIG=~/.kube/config
+            
+            # PostgreSQL
             helm upgrade --install postgres ~/back-server-k8s/charts/postgres
+            
+            # Kafka
             helm upgrade --install kafka ~/back-server-k8s/charts/kafka
+            
+            # Ktor API
             helm upgrade --install ktor-api ~/back-server-k8s/charts/ktor-api
+            
+            # Telegram Bot
             helm upgrade --install tg-bot ~/back-server-k8s/charts/tg-bot
-
-            kubectl rollout status deployment/postgres
-            kubectl rollout status deployment/kafka
-            kubectl rollout status deployment/ktor-api
-            kubectl rollout status deployment/tg-bot
-
-            kubectl get pods -o wide
-          EOF
+            
+            # Проверка
+            kubectl get pods
