@@ -1,34 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
   name: kafka
-  labels:
-    app: kafka
-
 spec:
   replicas: 1
-
   selector:
     matchLabels:
       app: kafka
-
   template:
     metadata:
       labels:
         app: kafka
-
     spec:
       containers:
         - name: kafka
           image: apache/kafka:3.7.0
 
           ports:
-            - name: kafka
-              containerPort: 9092
-
-            - name: controller
-              containerPort: 9093
+            - containerPort: 9092
+              name: kafka
+            - containerPort: 9093
+              name: controller
 
           env:
             - name: CLUSTER_ID
@@ -84,7 +76,6 @@ spec:
             requests:
               cpu: "250m"
               memory: "512Mi"
-
             limits:
               cpu: "1"
               memory: "1Gi"
@@ -92,24 +83,25 @@ spec:
           startupProbe:
             tcpSocket:
               port: 9092
-            failureThreshold: 30
-            periodSeconds: 10
-
-          readinessProbe:
-            tcpSocket:
-              port: 9092
-            initialDelaySeconds: 10
+            failureThreshold: 60
             periodSeconds: 10
             timeoutSeconds: 5
-            failureThreshold: 12
 
           livenessProbe:
             tcpSocket:
               port: 9092
-            initialDelaySeconds: 30
+            initialDelaySeconds: 120
             periodSeconds: 20
             timeoutSeconds: 5
             failureThreshold: 10
+
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
 
       volumes:
         - name: kafka-storage
