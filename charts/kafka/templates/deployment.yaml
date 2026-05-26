@@ -4,13 +4,19 @@ metadata:
   name: kafka
 spec:
   replicas: 1
+
+  strategy:
+    type: Recreate
+
   selector:
     matchLabels:
       app: kafka
+
   template:
     metadata:
       labels:
         app: kafka
+
     spec:
       containers:
         - name: kafka
@@ -19,6 +25,7 @@ spec:
           ports:
             - containerPort: 9092
               name: kafka
+
             - containerPort: 9093
               name: controller
 
@@ -33,10 +40,10 @@ spec:
               value: "broker,controller"
 
             - name: KAFKA_CONTROLLER_QUORUM_VOTERS
-              value: "1@kafka:9093"
+              value: "1@localhost:9093"
 
             - name: KAFKA_LISTENERS
-              value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+              value: "PLAINTEXT://:9092,CONTROLLER://:9093"
 
             - name: KAFKA_ADVERTISED_LISTENERS
               value: "PLAINTEXT://kafka:9092"
@@ -74,16 +81,24 @@ spec:
 
           resources:
             requests:
-              cpu: "250m"
               memory: "512Mi"
+              cpu: "250m"
+
             limits:
-              cpu: "1"
               memory: "1Gi"
+              cpu: "1"
 
           startupProbe:
             tcpSocket:
               port: 9092
             failureThreshold: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
 
@@ -93,15 +108,6 @@ spec:
             initialDelaySeconds: 120
             periodSeconds: 20
             timeoutSeconds: 5
-            failureThreshold: 10
-
-          readinessProbe:
-            tcpSocket:
-              port: 9092
-            initialDelaySeconds: 60
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 12
 
       volumes:
         - name: kafka-storage
