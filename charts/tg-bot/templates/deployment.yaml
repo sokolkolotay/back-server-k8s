@@ -40,3 +40,6 @@ spec:
 
             - name: KAFKA_TOPIC
               value: "{{ .Values.kafka.topic }}"
+
+            - name: TASK_API_URL
+              value: "http://ktor-api:8080"  
